@@ -1,3 +1,6 @@
 [submodule "ext/renate_od"]
 	path = ext/renate_od
 	url = https://github.com/gergopokol/renate-od
+[submodule "ext/taiga"]
+	path = ext/taiga
+	url = https://github.com/taiga-project/taiga.git
