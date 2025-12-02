@@ -45,4 +45,46 @@
     #define READ_COORDINATES 0
     #define READ_RENATE_OD 1
 
+    #define PERT_OFF 0
+    #define PERT_ON 1
+
+
+#pragma once
+#include "core/policies.cuh"
+
+using KernelFn = void(*)(dim3, dim3, TaigaGlobals*, TaigaCommons*, double*);
+
+#define ENTRY(SOLVER, FIELD, ION, EF, DET, PERT) \
+    &launch_kernel<SOLVER, FIELD, ION, EF, DET, PERT>
+
+#define SOLVER_CASES(FIELD, ION, EF, DET, PERT) \
+    { ENTRY(SolverRK4, FIELD, ION, EF, DET, PERT), \
+      ENTRY(SolverRKN, FIELD, ION, EF, DET, PERT), \
+      ENTRY(SolverVerlet, FIELD, ION, EF, DET, PERT), \
+      ENTRY(SolverYoshida, FIELD, ION, EF, DET, PERT) }
+
+#define FIELD_CASES(ION, EF, DET, PERT) \
+    { SOLVER_CASES(CubicSplineInterp, ION, EF, DET, PERT), \
+      SOLVER_CASES(CubicBSplineInterp, ION, EF, DET, PERT) }
+
+#define ION_CASES(EF, DET, PERT) \
+    { FIELD_CASES(IonisationOff, EF, DET, PERT), \
+      FIELD_CASES(IonisationOn,  EF, DET, PERT) }
+
+#define EF_CASES(DET, PERT) \
+    { ION_CASES(LorentzWithoutElectric, DET, PERT), \
+      ION_CASES(LorentzWithElectric,  DET, PERT) }
+
+#define DET_CASES(PERT) \
+    { EF_CASES(LinearInterpolation,  PERT), \
+      EF_CASES(BezierInterpolation,  PERT), \
+      EF_CASES(HermiteInterpolation, PERT) }
+
+#define PERT_CASES \
+    { DET_CASES(PerturbationOff), \
+      DET_CASES(PerturbationOn) }
+
+// Dimensions: [solver][field][ion][ef][pert][detect]
+static KernelFn taiga_dispatch_table[4][2][2][2][2][3] = PERT_CASES;
+
 #endif //CONSTANTS_H

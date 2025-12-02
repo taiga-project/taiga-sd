@@ -237,7 +237,21 @@ int main(int argc, char *argv[]){
         for (long step_i=0; step_i<run.step_host; ++step_i){
             if (step_i == 0) cudaEventRecord(cuda_event_core_start, 0);
 
-            taiga <<< run.block_number, run.block_size >>> (device_global, device_common, device_service_array);
+            dim3 grid(run.block_number);
+            dim3 block(run.block_size);
+
+            KernelFn taiga_fn = taiga_dispatch_table[solver]
+                                                    [magnetic_field_type]
+                                                    [secondary_ionisation_switch]
+                                                    [electric_field_switch]
+                                                    [pert_switch]
+                                                    [det_interp];
+
+            if (taiga_fn) {
+                taiga_fn(grid, block, device_global, device_common, device_service_array);
+            } else {
+                fprintf(stderr, "Unsupported kernel combination!\n");
+            }
 
             if (step_i == 0) cudaEventRecord(cuda_event_core_end, 0);
             CHECK_ERROR(cudaEventSynchronize(cuda_event_core_end));
